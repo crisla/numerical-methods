@@ -365,7 +365,6 @@ class Model(solvers.IVP):
 
             # add (faint) new stable manifolds 
             if plot_manif == True:
-                self.steady_state.set_values()
                 new_k_up = k_star*4
                 new_k_dw = k_star/4
                 new_ms_lower = self.solve_reverse_shooting(new_k_dw, h=1.0, eps=1e-5, integrator='dopri5')
