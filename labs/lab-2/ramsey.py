@@ -270,6 +270,7 @@ class Model(solvers.IVP):
             # copy the original params and steady state value
             orig_params = self.params.copy()
             orig_k_star = k_star
+            orig_c_star = c_star
             
             # shock the parameter
             self.params[param] = shock * self.params[param]
@@ -359,12 +360,14 @@ class Model(solvers.IVP):
             if plot_traj == True:
                 traj = self.solve_reverse_shooting(orig_k_star)
                 self.plot_trajectory(traj, color='r', phase_space=False, ls="--")
+                ax.plot((orig_k_star,orig_k_star),
+                        (orig_c_star,traj[-1,1]), c='r', ls='--')
 
             # add (faint) new stable manifolds 
             if plot_manif == True:
                 self.steady_state.set_values()
-                new_k_up = self.steady_state.values['k_star']*4
-                new_k_dw = self.steady_state.values['k_star']/4
+                new_k_up = k_star*4
+                new_k_dw = k_star/4
                 new_ms_lower = self.solve_reverse_shooting(new_k_dw, h=1.0, eps=1e-5, integrator='dopri5')
                 new_ms_upper = self.solve_reverse_shooting(new_k_up, h=1.0, eps=1e-5, integrator='dopri5')
                 ss_traj = np.vstack((np.flipud(new_ms_lower),new_ms_upper))
@@ -392,7 +395,7 @@ class Model(solvers.IVP):
                 
             return [ax, k_locus, c_locus, ss_marker]   
         
-    def plot_trajectory(self, traj, color='b', ax=None, phase_space=True, 
+    def plot_trajectory(self, traj, color='b', ax=None, phase_space=True,
                         **kwargs):
         """
         Plots the time path of the economy.
@@ -409,7 +412,7 @@ class Model(solvers.IVP):
             ax:       (object) AxesSubplot object on which the trajectory 
                       should be plotted.
                    
-            kind:     (str) One of 'phase_space' or 'time_series', depending.
+            phase_space: (boolean) True if plotting on a phase diagram.
             
             **kwargs: (dict) Dictionary of optional keyword arguments to pass
                       to ax.plot method.
