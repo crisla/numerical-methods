@@ -175,7 +175,7 @@ class Model(solvers.IVP):
                  head_width=0.05 * c_star, head_length=0.05 * k_star)
                      
     def plot_phase_diagram(self, gridmax, N=1000, arrows=False, param=None,  
-                           shock=None, reset=True, plot_traj=False, 
+                           shock=None, reset=True, plot_traj=False, plot_manif=False, 
                            cmap='winter', mu=0.1):
         """
         Generates phase diagram for the Ramsey model.
@@ -202,7 +202,10 @@ class Model(solvers.IVP):
             plot_traj: (boolean) Whether or not you wish to plot a trajectory of
                        the economy in order to show transition dynamics 
                        following a shock to a parameter.
-                       
+            
+            plot_manif:(boolean) Whether or not you wish to plot the new 
+                        stable manifold of the economy.
+
             cmap:      (str) A valid matplotlib colormap. Default is 'winter'.
             
             mu:        (float) Determines spread between colors...
@@ -356,6 +359,16 @@ class Model(solvers.IVP):
             if plot_traj == True:
                 traj = self.solve_reverse_shooting(orig_k_star)
                 self.plot_trajectory(traj, color='r', phase_space=False, ls="--")
+
+            # add (faint) new stable manifolds 
+            if plot_manif == True:
+                self.steady_state.set_values()
+                new_k_up = self.steady_state.values['k_star']*4
+                new_k_dw = self.steady_state.values['k_star']/4
+                new_ms_lower = self.solve_reverse_shooting(new_k_dw, h=1.0, eps=1e-5, integrator='dopri5')
+                new_ms_upper = self.solve_reverse_shooting(new_k_up, h=1.0, eps=1e-5, integrator='dopri5')
+                ss_traj = np.vstack((np.flipud(new_ms_lower),new_ms_upper))
+                ax.plot(ss_traj[:,0],ss_traj[:,1],alpha=0.4,ls=":",c='r')
                 
             # add arrows to indicate out of steady-state dynamics?
             if arrows == True:
