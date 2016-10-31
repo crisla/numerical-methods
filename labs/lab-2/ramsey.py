@@ -355,7 +355,7 @@ class Model(solvers.IVP):
             # plot a trajectory in phase space showing transition dynamics
             if plot_traj == True:
                 traj = self.solve_reverse_shooting(orig_k_star)
-                self.plot_trajectory(traj, color='r')
+                self.plot_trajectory(traj, color='r', phase_space=False, ls="--")
                 
             # add arrows to indicate out of steady-state dynamics?
             if arrows == True:
