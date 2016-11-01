@@ -176,7 +176,7 @@ class Model(solvers.IVP):
                      
     def plot_phase_diagram(self, gridmax, N=1000, arrows=False, param=None,  
                            shock=None, reset=True, plot_traj=False, plot_manif=False, 
-                           cmap='winter', mu=0.1):
+                           return_traj=False,cmap='winter', mu=0.1):
         """
         Generates phase diagram for the Ramsey model.
         
@@ -201,10 +201,12 @@ class Model(solvers.IVP):
             
             plot_traj: (boolean) Whether or not you wish to plot a trajectory of
                        the economy in order to show transition dynamics 
-                       following a shock to a parameter.
+                       following a shock to a parameter. Default is False.
             
             plot_manif:(boolean) Whether or not you wish to plot the new 
-                        stable manifold of the economy.
+                        stable manifold of the economy. Default is False.
+
+            return_traj:(boolean) Default is False.
 
             cmap:      (str) A valid matplotlib colormap. Default is 'winter'.
             
@@ -375,13 +377,21 @@ class Model(solvers.IVP):
             # add arrows to indicate out of steady-state dynamics?
             if arrows == True:
                 self.__add_arrows(ax, mu=0.25)
+
+            # if the trajectory was requested but not plotted, find it anyway
+            if plot_traj == False and return_traj == True:
+                  traj = self.solve_reverse_shooting(orig_k_star)
                 
             # reset the original params and recompute steady state?
             if reset == True:
                 self.update_model_parameters(orig_params)
                 self.steady_state.set_values()
-                
-            return [ax, new_k_locus, new_c_locus, new_ss_marker]
+
+            if return_traj == False:
+                return [ax, new_k_locus, new_c_locus, new_ss_marker]
+
+            else:               
+                return [ax, new_k_locus, new_c_locus, new_ss_marker, traj]
         
         else:
             ax.set_title('Phase diagram for the optimal growth model', 
@@ -427,7 +437,7 @@ class Model(solvers.IVP):
             ax.plot(traj[:,0], traj[:,1], color=color, **kwargs)
     
     def get_impulse_response(self, method, param, shock, T=100, 
-                             kind='efficiency_units', reset=True):
+                             kind='efficiency_units', reset=True, no_padding=False):
         """
         Generates an impulse response functions for the endogenous variables in
         the model following a shock to one of the model parameters.
@@ -582,6 +592,7 @@ class Model(solvers.IVP):
         irf[:,1] = (factor * irf[:,1])
         
         # add the padding
+        no_pad_irf = irf
         irf = np.vstack((padding, irf))
         
         # reset the original params and recompute steady state?
@@ -589,7 +600,13 @@ class Model(solvers.IVP):
             self.update_model_parameters(orig_params)
             self.steady_state.set_values()
         
-        return irf 
+        # if we don't want padding!
+        if no_padding == True:
+            return no_pad_irf
+
+        # defult is yes
+        else:
+            return irf 
     
     def plot_impulse_response(self, variables, method, param, shock, T, 
                               color='b', kind='efficiency_units', log=False, 
@@ -720,6 +737,66 @@ class Model(solvers.IVP):
         axes[-1,0].set_xlabel('Year, $t$,', fontsize=15, family='serif')
         
         return [fig, axes]
+
+    def plot_movie(self, gridmax, pam, pamshock, N=1000, tmax=100,reset=True,format='eps',t_step=10):
+        """
+        """
+        k_star = self.steady_state.values['k_star']
+        c_star = self.steady_state.values['c_star']
+        i=0
+        # Plot the initial phase diagram
+        plt.figure(figsize=(8,8))               # Clean the canvas
+        self.plot_phase_diagram(gridmax, N=N)   # Plot the base diagram
+        plt.scatter(k_star,c_star)              # Plot current status
+        plt.savefig("pam_shock_{}".format(i),        # Save result
+                  fomat='eps', dpi=1000)
+        i+=1
+
+        # Plot the change in locis
+        plt.figure(figsize=(8,8))
+        self.plot_phase_diagram(gridmax, N=N, param=pam,shock=pamshock)
+        plt.scatter(k_star,c_star)
+        plt.savefig("pam_shock_{}".format(i), fomat='eps', dpi=1000)
+        i+=1
+
+        # Plot the new manifold
+        plt.figure(figsize=(8,8))
+        self.plot_phase_diagram(gridmax, N=N, param=pam,shock=pamshock, plot_manif=True)
+        plt.scatter(k_star,c_star)
+        plt.savefig("pam_shock_{}".format(i), fomat='eps', dpi=1000)
+        i+=1
+
+        # Plot the jump
+        plt.figure(figsize=(8,8))                                   # Clean the canvas
+        main = self.plot_phase_diagram(gridmax, N=N, param=pam,     # Plot the base diagram
+                shock=pamshock, plot_manif=True, return_traj=True)
+        traj = main[4]                                              # Find the new trajectory
+        plt.scatter(k_star,traj[-1,1])                              # Plot current status
+        plt.plot((k_star,k_star),                                   # Plot the jump
+                 (c_star,traj[-1,1]), c='r', ls='--')
+        plt.savefig("pam_shock_{}".format(i), fomat='eps', dpi=1000)     # Save result
+        i+=1
+
+        # Plot evolution trugh time
+        irf = self.get_impulse_response(method='forward_shooting', 
+                    param=pam, shock=pamshock, T=tmax, no_padding=True)
+        k_traj = irf[:,[0,1]]
+        c_traj = irf[:,[0,2]]
+        traj_so_far = np.array((k_star,traj[-1,1]))
+        for t in range(t_step,tmax+t_step,t_step):
+          plt.figure(figsize=(8,8))
+          self.plot_phase_diagram(gridmax, N=N, param=pam,
+                  shock=pamshock, plot_manif=True)
+          plt.scatter(k_traj[t,1],c_traj[t,1])
+          plt.plot((k_star,k_star),                                   # Plot the jump
+                 (c_star,traj[-1,1]), c='r', ls='--')
+          traj_so_far = np.vstack((traj_so_far,(k_traj[t,1],c_traj[t,1])))
+          self.plot_trajectory(traj_so_far, 
+                  color='r', phase_space=False, ls="--")
+          plt.savefig("pam_shock_{}".format(i), fomat='eps', dpi=1000)
+          i+=1
+
+        return k_traj
     
     def solve_linearization(self, k0, ti):
         """
