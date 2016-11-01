@@ -258,15 +258,15 @@ class Model(solvers.IVP):
 
         # demarcate the steady state
         ax.set_xticks([k_star])
-        ax.set_xticklabels([r'$k^*$'])
+        ax.set_xticklabels([r'$k^*$'],fontsize=20)
         ax.set_yticks([c_star])
-        ax.set_yticklabels([r'$c^*$'])
+        ax.set_yticklabels([r'$c^*$'],fontsize=20)
         
         # axes, labels, title, legend, etc
-        ax.set_xlabel('$k$', fontsize=15)
+        ax.set_xlabel('$k$', fontsize=25)
         ax.xaxis.set_label_coords(0.95, -0.05)
         ax.set_ylim(0, 2 * c_star)
-        ax.set_ylabel('$c$', rotation='horizontal', fontsize=15)    
+        ax.set_ylabel('$c$', rotation='horizontal', fontsize=25)    
         ax.yaxis.set_label_coords(-0.05, 0.95)
         
         # handles parameter shocks   
@@ -290,9 +290,9 @@ class Model(solvers.IVP):
             new_ss_marker = ax.plot(k_star, c_star, marker='.', markersize=10, 
                                     color='k')[0]
             ax.set_xticks([k_star])
-            ax.set_xticklabels([r'$k^*$'])
+            ax.set_xticklabels([r'$k^*$'],fontsize=20)
             ax.set_yticks([c_star])
-            ax.set_yticklabels([r'$c^*$'])
+            ax.set_yticklabels([r'$c^*$'],fontsize=20)
             
             # reset y-axes limits
             ax.set_ylim(0, 2 * c_star)
@@ -323,7 +323,7 @@ class Model(solvers.IVP):
                 ax.set_title(('Changing $%s$ shifts both $\dot{k}=0$ and ' + 
                               '$\dot{c}=0$ locii!') %param, fontsize=20, 
                               family='serif')
-                ax.legend(loc='best', frameon=False)
+                ax.legend(loc='best', frameon=False,fontsize=20)
                 
             # changes in these params shift the c-dot locus only
             elif param in ['\\rho', '\\theta']:
@@ -339,7 +339,7 @@ class Model(solvers.IVP):
                 
                 ax.set_title('Changing $%s$ shifts the $\dot{c}=0$ locus!' 
                               %param, fontsize=20, family='serif')
-                ax.legend(loc='best', frameon=False) 
+                ax.legend(loc='best', frameon=False,fontsize=20) 
             
             # changes in the population growth rate shift k-dot locus
             elif param == 'n':
@@ -356,7 +356,7 @@ class Model(solvers.IVP):
                 
                 ax.set_title('Changing $%s$ shifts the $\dot{k}=0$ locus!' 
                               %param, fontsize=20, family='serif')
-                ax.legend(loc='best', frameon=False)
+                ax.legend(loc='best', frameon=False,fontsize=20)
                 
             else:
                 raise ValueError
@@ -399,7 +399,7 @@ class Model(solvers.IVP):
         else:
             ax.set_title('Phase diagram for the optimal growth model', 
                          fontsize=20, family='serif')
-            ax.legend(loc='best', frameon=False)
+            ax.legend(loc='best', frameon=False,fontsize=20)
         
             # Add arrows to indicate out of steady-state dynamics?
             if arrows == True:
@@ -755,6 +755,7 @@ class Model(solvers.IVP):
         plt.scatter(k_star,c_star)              # Plot current status
         plt.savefig(filename+"{}".format(i),        # Save result
                     fomat='eps', dpi=1000)
+        plt.annotate("t = -1",xy=(1,gridmax))
         i+=1
 
         # Plot the change in locis
@@ -762,6 +763,7 @@ class Model(solvers.IVP):
         self.plot_phase_diagram(gridmax, N=N, param=pam,shock=pamshock)
         plt.scatter(k_star,c_star)
         plt.savefig(filename+"{}".format(i), fomat='eps', dpi=1000)
+        plt.annotate("t = 0",xy=(1,gridmax))
         i+=1
 
         # Plot the new manifold
@@ -769,6 +771,7 @@ class Model(solvers.IVP):
         self.plot_phase_diagram(gridmax, N=N, param=pam,shock=pamshock, plot_manif=True)
         plt.scatter(k_star,c_star)
         plt.savefig(filename+"{}".format(i), fomat='eps', dpi=1000)
+        plt.annotate("t = 0",xy=(1,gridmax))
         i+=1
 
         # Plot the jump
@@ -780,6 +783,7 @@ class Model(solvers.IVP):
         plt.plot((k_star,k_star),                                   # Plot the jump
                  (c_star,traj[-1,1]), c='r', ls='--')
         plt.savefig(filename+"{}".format(i), fomat='eps', dpi=1000)     # Save result
+        plt.annotate("t = 0",xy=(1,gridmax))
         i+=1
 
         # Plot evolution trugh time
@@ -798,6 +802,7 @@ class Model(solvers.IVP):
           traj_so_far = np.vstack((traj_so_far,(k_traj[t,1],c_traj[t,1])))  # Record trajectory
           self.plot_trajectory(traj_so_far,                                 # Plot trajectory
                     color='r', phase_space=False, ls="--")
+          plt.annotate('t = {}'.format(t),xy=(1,gridmax))
           plt.savefig(filename+"{}".format(i), fomat='eps', dpi=1000)      # Save result
           i+=1
 
