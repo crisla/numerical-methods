@@ -11,6 +11,9 @@ import matplotlib.pyplot as plt
 import solvers, integrators
 import steady_states
 import pwt
+
+import os
+import subprocess
                     
 class Model(solvers.IVP):
     """Base class for a Ramsey (1928) model of optimal savings."""
@@ -738,65 +741,73 @@ class Model(solvers.IVP):
         
         return [fig, axes]
 
-    def plot_movie(self, gridmax, pam, pamshock, N=1000, tmax=100,reset=True,format='eps',t_step=10):
+    def plot_movie(self, gridmax, pam, pamshock, N=1000, tmax=100,reset=True,
+                    formatt=None,filename="pam_shock",t_step=10):
         """
         """
         k_star = self.steady_state.values['k_star']
         c_star = self.steady_state.values['c_star']
+
         i=0
         # Plot the initial phase diagram
         plt.figure(figsize=(8,8))               # Clean the canvas
         self.plot_phase_diagram(gridmax, N=N)   # Plot the base diagram
         plt.scatter(k_star,c_star)              # Plot current status
-        plt.savefig("pam_shock_{}".format(i),        # Save result
-                  fomat='eps', dpi=1000)
+        plt.savefig(filename+"{}".format(i),        # Save result
+                    fomat='eps', dpi=1000)
         i+=1
 
         # Plot the change in locis
         plt.figure(figsize=(8,8))
         self.plot_phase_diagram(gridmax, N=N, param=pam,shock=pamshock)
         plt.scatter(k_star,c_star)
-        plt.savefig("pam_shock_{}".format(i), fomat='eps', dpi=1000)
+        plt.savefig(filename+"{}".format(i), fomat='eps', dpi=1000)
         i+=1
 
         # Plot the new manifold
         plt.figure(figsize=(8,8))
         self.plot_phase_diagram(gridmax, N=N, param=pam,shock=pamshock, plot_manif=True)
         plt.scatter(k_star,c_star)
-        plt.savefig("pam_shock_{}".format(i), fomat='eps', dpi=1000)
+        plt.savefig(filename+"{}".format(i), fomat='eps', dpi=1000)
         i+=1
 
         # Plot the jump
         plt.figure(figsize=(8,8))                                   # Clean the canvas
         main = self.plot_phase_diagram(gridmax, N=N, param=pam,     # Plot the base diagram
-                shock=pamshock, plot_manif=True, return_traj=True)
+                  shock=pamshock, plot_manif=True, return_traj=True)
         traj = main[4]                                              # Find the new trajectory
         plt.scatter(k_star,traj[-1,1])                              # Plot current status
         plt.plot((k_star,k_star),                                   # Plot the jump
                  (c_star,traj[-1,1]), c='r', ls='--')
-        plt.savefig("pam_shock_{}".format(i), fomat='eps', dpi=1000)     # Save result
+        plt.savefig(filename+"{}".format(i), fomat='eps', dpi=1000)     # Save result
         i+=1
 
         # Plot evolution trugh time
         irf = self.get_impulse_response(method='forward_shooting', 
-                    param=pam, shock=pamshock, T=tmax, no_padding=True)
+                      param=pam, shock=pamshock, T=tmax, no_padding=True)
         k_traj = irf[:,[0,1]]
         c_traj = irf[:,[0,2]]
         traj_so_far = np.array((k_star,traj[-1,1]))
         for t in range(t_step,tmax+t_step,t_step):
-          plt.figure(figsize=(8,8))
-          self.plot_phase_diagram(gridmax, N=N, param=pam,
-                  shock=pamshock, plot_manif=True)
-          plt.scatter(k_traj[t,1],c_traj[t,1])
-          plt.plot((k_star,k_star),                                   # Plot the jump
+          plt.figure(figsize=(8,8))                                         # Clean the canvas
+          self.plot_phase_diagram(gridmax, N=N, param=pam,                  # Plot the base diagram
+                    shock=pamshock, plot_manif=True)
+          plt.scatter(k_traj[t,1],c_traj[t,1])                              # Plot current status
+          plt.plot((k_star,k_star),                                         # Plot the jump
                  (c_star,traj[-1,1]), c='r', ls='--')
-          traj_so_far = np.vstack((traj_so_far,(k_traj[t,1],c_traj[t,1])))
-          self.plot_trajectory(traj_so_far, 
-                  color='r', phase_space=False, ls="--")
-          plt.savefig("pam_shock_{}".format(i), fomat='eps', dpi=1000)
+          traj_so_far = np.vstack((traj_so_far,(k_traj[t,1],c_traj[t,1])))  # Record trajectory
+          self.plot_trajectory(traj_so_far,                                 # Plot trajectory
+                    color='r', phase_space=False, ls="--")
+          plt.savefig(filename+"{}".format(i), fomat='eps', dpi=1000)      # Save result
           i+=1
 
-        return k_traj
+        if formatt=='mp4':
+          subprocess.call(["ffmpeg", "-framerate","1/5", "-i", filename+"%01d.png", filename+".mp4","-y"])
+
+        elif formatt=='gif':
+          subprocess.call(["ffmpeg", "-framerate","1/5", "-i", filename+"%01d.png", filename+".gif", "-y"])
+
+
     
     def solve_linearization(self, k0, ti):
         """
